@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SignSpeak 3D — Holistic Body & Dual-Hand Edition</title>
+<style>
+:root{--bg:#0a1628;--bg2:#10243c;--card:#13294266;--bd:#ffffff22;--tx:#e8f1f8;--mu:#a3b8cb;--t:#2dd4bf;--m:#6ee7b7;--bad:#fca5a5;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:radial-gradient(900px 500px at 80% -10%,#0f766e55,transparent),var(--bg);color:var(--tx);font:16px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+h1,h2,h3{line-height:1.15;margin:0 0 .5rem;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,6vw,3.2rem)}h2{font-size:1.6rem}h3{font-size:1.05rem}
+p{margin:.3rem 0 .8rem;max-width:68ch}.mu{color:var(--mu)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:#0a1628e6;backdrop-filter:blur(10px);border-bottom:1px solid var(--bd)}
+.bar{display:flex;gap:.75rem;align-items:center;padding:.6rem 1rem;max-width:1150px;margin:auto;flex-wrap:wrap}
+.logo{font-weight:700;margin-right:auto;color:var(--m)}
+nav{display:flex;gap:.25rem;overflow-x:auto;max-width:100%}
+nav a{color:var(--mu);text-decoration:none;padding:.4rem .7rem;border-radius:8px;white-space:nowrap}
+nav a.on{color:var(--bg);background:var(--m);font-weight:600}
+main{max-width:1150px;margin:auto;padding:1.5rem 1rem 3rem}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:1rem;backdrop-filter:blur(6px)}
+.grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.btn{background:var(--t);color:#04211e;border:0;border-radius:10px;padding:.5rem .9rem;font:inherit;font-weight:600;cursor:pointer}
+.btn.g{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn.sm{padding:.3rem .6rem;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+:focus-visible{outline:3px solid var(--m);outline-offset:2px}
+input,select,textarea{background:#0a1628;color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:.5rem .7rem;font:inherit}
+textarea{width:100%;min-height:90px}
+.badge{display:inline-block;font-size:.8rem;padding:.15rem .6rem;border-radius:99px;border:1px solid var(--bd);color:var(--mu)}
+.badge.ok{color:var(--m);border-color:var(--m)}.badge.warn{color:#fcd34d;border-color:#fcd34d}
+.note{border-left:4px solid var(--m);background:#2dd4bf14;padding:.6rem .9rem;border-radius:8px;margin:.8rem 0}
+.vid{aspect-ratio:4/3;background:#06101e;border-radius:12px;display:grid;place-items:center;overflow:hidden;text-align:center;color:var(--mu);position:relative}
+.vid video,.vid canvas.overlay{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);position:absolute;inset:0}
+.vid canvas.overlay{z-index:2;pointer-events:none}
+.vid span{position:relative;z-index:3;padding:1rem}
+.bar2{height:10px;background:#ffffff18;border-radius:9px;overflow:hidden}.bar2>i{display:block;height:100%;background:var(--t);width:0;transition:width .12s}
+canvas#cv{width:100%;height:380px;display:block;border-radius:12px;background:#06101e;touch-action:none;cursor:grab}
+.sl{display:grid;grid-template-columns:70px 1fr;gap:.4rem;align-items:center}
+.sl input{padding:0}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--m);color:#04211e;padding:.5rem 1rem;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#toast.on{opacity:1}
+.log span{display:inline-block;margin:2px;padding:2px 8px;border-radius:8px;background:#2dd4bf22;font-size:.85rem}
+.opt{display:block;width:100%;text-align:left;margin:.3rem 0}
+.ok-t{color:var(--m)}.bad-t{color:var(--bad)}
+.scroll-btns{max-height:135px;overflow-y:auto;padding:4px;border:1px solid var(--bd);border-radius:10px;background:#06101e66}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<!-- MediaPipe Holistic (Body + Face + 2 Hands) & Drawing Utils -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
+</head><body>
+<header><div class="bar"><span class="logo">SignSpeak 3D</span>
+<nav aria-label="Main"><a href="#home">Home</a><a href="#translator">Live Translator</a><a href="#studio">3D Gesture Studio</a><a href="#learn">Learn</a><a href="#dictionary">Dictionary</a><a href="#about">About</a></nav>
+<a class="btn" href="#translator" style="text-decoration:none">Start Translating</a></div></header>
+<main>
+
+<section id="home" class="pg">
+<h1>Full Body + Dual-Hand ASL Translator.</h1>
+<p class="mu" style="font-size:1.1rem">Powered by MediaPipe Holistic: tracks your upper body, face landmarks, and both hands simultaneously to recognize A–Z letters, 0–9 numbers, and body-anchored everyday sign language phrases with voice output.</p>
+<div class="note"><b>Upgraded Engine:</b> Now includes <b>Body Pose + 2-Hand Skeleton Tracking</b> and a multi-rule geometric classifier so signs anchored to your head/chest (like <i>Hello, Thank You, Please, Sorry, Love, Home</i>) and two-handed signs (like <i>Stop, More, Help, Friend</i>) work seamlessly alongside numbers and letters.</div>
+<div class="grid">
+<div class="card"><h3>Live Holistic Translator</h3><p class="mu">Real-time webcam skeleton overlay for body + both hands, smart geometric sign engine, and voice output.</p><a class="btn g" href="#translator">Open Translator</a></div>
+<div class="card"><h3>3D Gesture Studio</h3><p class="mu">Inspect handshapes in 3D, rotate the articulated model, and step through every sign in the vocabulary.</p><a class="btn g" href="#studio">Open 3D Studio</a></div>
+<div class="card"><h3>Learn &amp; Dictionary</h3><p class="mu">Browse all supported Alphabet, Number, Body-Anchored, and Dual-Hand signs with quizzes.</p><a class="btn g" href="#dictionary">Open Dictionary</a></div>
+</div></section>
+
+<section id="translator" class="pg" hidden>
+<h2>Live Holistic Translator (Body + 2 Hands)</h2>
+<p class="mu">Supporting <b>A–Z</b>, <b>0–9</b>, and <b>24+ Body/Dual-Hand Phrases</b> (<span id="vocabCount">0</span> total signs). <span class="badge ok">Holistic Body + 2 Hands + Audio</span></p>
+<div class="grid">
+<div class="card"><h3>Camera &amp; Skeleton Feed</h3>
+<div class="vid" id="vid">
+  <span id="vidMsg">Camera is off.<br>Press <b>Start Camera</b> to load Body + 2-Hand AI.</span>
+</div>
+<div class="row">
+  <button class="btn" id="camOn">Start Camera</button>
+  <button class="btn g" id="camOff" disabled>Stop Camera</button>
+  <label style="font-size:.85rem;margin-left:auto"><input type="checkbox" id="showSkel" checked> Show Skeleton</label>
+</div>
+<div class="row">
+  <span class="badge" id="camSt">Camera: off</span>
+  <span class="badge ok" id="trackSt">Holistic AI: ready</span>
+  <span class="badge" id="bodySt">Body: waiting</span>
+</div>
+<p class="mu" style="font-size:.85rem"><b>Tip for Numbers vs Letters:</b> Show <b>Numbers (1–9)</b> with your <b>palm facing YOU</b> (back of hand to camera), and <b>Letters (A–Z)</b> with your <b>palm facing the CAMERA</b> so overlapping shapes like 2/V, 4/B, and 6/W never conflict!</p></div>
+
+<div class="card"><h3>Live Recognition &amp; Studio Override</h3>
+<p>Tracking status: <b id="hs">idle</b></p>
+<p>Detected Sign: <b id="cg" style="font-size:1.4rem;color:var(--m)">None</b> <span class="badge ok" id="cf">0%</span></p>
+<div class="bar2"><i id="cb"></i></div>
+<p class="mu" style="font-size:.82rem">Hold a sign steady for ~0.5s to add it to your message and speak it aloud.</p>
+<hr style="border:0;border-top:1px solid var(--bd);margin:.7rem 0">
+<p class="mu" style="font-size:.85rem;margin-bottom:.3rem"><b>Quick Test / Simulation Buttons:</b></p>
+<div class="scroll-btns row" id="quick"></div>
+<div id="sliders" style="margin-top:.5rem"></div>
+<div class="row"><button class="btn g sm" id="demoBtn">Start Manual Slider Sim</button></div>
+</div>
+</div>
+
+<div class="card" style="margin-top:1rem"><h3>Message Builder &amp; Voice Output</h3>
+<textarea id="msg" aria-label="Message" placeholder="Recognised letters, numbers, and words appear here..."></textarea>
+<div class="row">
+  <button class="btn" id="speakMsg">🔊 Speak Full Sentence</button>
+  <button class="btn g" id="spaceBtn">␣ Space</button>
+  <button class="btn g" id="undo">Undo Last</button>
+  <button class="btn g" id="clr">Clear</button>
+  <button class="btn g" id="cp">Copy Text</button>
+  <label style="font-size:.85rem;margin-left:auto"><input type="checkbox" id="autoSpeak" checked> Auto-Speak Each Sign</label>
+</div>
+<div class="row"><span class="mu">Quick Phrase Bank:</span><span id="phr" class="row"></span></div>
+<h3>Recognition History</h3><div class="log" id="log"><span class="mu" style="background:none">None yet.</span></div></div>
+</section>
+
+<section id="studio" class="pg" hidden>
+<h2>3D Gesture Studio</h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+<div class="card"><canvas id="cv" aria-label="3D hand model"></canvas>
+<div id="nogl" hidden class="note">3D rendering isn’t available here.</div>
+<div class="row"><button class="btn g" id="rs">Reset view</button><button class="btn" id="play">Play demos</button><span class="mu">Drag to rotate, scroll to zoom.</span></div></div>
+<div class="card"><h3 id="sn">Choose a sign</h3>
+<div class="scroll-btns row" id="sq"></div>
+<p id="sd" class="mu" style="margin-top:.6rem"></p><ol id="ss"></ol><p>Key configuration: <b id="sk">-</b></p></div></div>
+</section>
+
+<section id="learn" class="pg" hidden>
+<h2>Learn ASL Signs</h2>
+<div class="row"><input id="ls" type="search" placeholder="Search lessons..."><select id="ll" aria-label="Level"><option value="">All levels</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select><span class="badge ok" id="prog"></span></div>
+<div class="bar2"><i id="pb"></i></div>
+<div class="grid" id="lg" style="margin-top:1rem"></div>
+<div class="grid" style="margin-top:1rem"><div class="card"><h3>Quick Quiz</h3><div id="qz"></div></div><div class="card"><h3>Completed Review</h3><div id="rv" class="mu"></div></div></div>
+</section>
+
+<section id="dictionary" class="pg" hidden>
+<h2>Complete Gesture Dictionary</h2>
+<div class="row">
+  <input id="ds" type="search" placeholder="Search letters, numbers, words...">
+  <select id="dc" aria-label="Category"><option value="">All categories</option><option>Alphabet</option><option>Numbers</option><option>Phrase</option></select>
+  <select id="dl" aria-label="Difficulty"><option value="">All levels</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+</div>
+<div class="grid" id="dg"></div>
+</section>
+
+<section id="about" class="pg" hidden>
+<h2>About Holistic Body &amp; Hand Recognition</h2>
+<div class="grid">
+<div class="card"><h3>How Body + 2-Hand Detection Works</h3><p>This app uses <b>MediaPipe Holistic</b> to track 33 body pose landmarks, 468 face landmarks, and 21 landmarks per hand (left &amp; right). By combining body coordinates with finger geometry, the app knows whether your hand is touching your forehead (<i>Hello</i>), chin (<i>Thank You / Home / Eat</i>), chest (<i>Sorry / Please / Love</i>), or interacting with your second hand (<i>Stop / Help / More / Friend</i>).</p></div>
+<div class="card"><h3>How to Separate Numbers &amp; Letters</h3><p>In sign language, some numbers and letters share similar finger extensions (such as <b>V</b> and <b>2</b>, or <b>B</b> and <b>4</b>). Our geometric engine uses <b>Palm Orientation</b>: face your palm <b>toward the camera</b> for Alphabet letters, and face the <b>back of your hand toward the camera</b> (palm facing you) for Numbers 1–9!</p></div>
+</div>
+</section>
+</main><div id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const FN=['Thumb','Index','Middle','Ring','Pinky'];
+
+function speakText(text) {
+  if (!('speechSynthesis' in window)) return;
+  if (!$('#autoSpeak')?.checked && text !== '__FORCE__') return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+function forceSpeak(text) {
+  if (!('speechSynthesis' in window) || !text) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+/* ==== COMPREHENSIVE VOCABULARY: A-Z, 0-9, & BODY/2-HAND PHRASES ==== */
+const D=[
+  // Alphabet (A-Z)
+  {id:'A',out:'A',meaning:'Letter A',cat:'Alphabet',lvl:'Beginner',c:[0,1,1,1,1],d:'Closed fist with thumb resting upright against the side of the index finger (palm facing camera).',m:'Tucking thumb across the front.'},
+  {id:'B',out:'B',meaning:'Letter B',cat:'Alphabet',lvl:'Beginner',c:[1,0,0,0,0],d:'Flat hand, four fingers straight and together, thumb folded across palm (palm facing camera).',m:'Spreading fingers wide.'},
+  {id:'C',out:'C',meaning:'Letter C',cat:'Alphabet',lvl:'Beginner',c:[0.5,0.5,0.5,0.5,0.5],d:'Fingers and thumb curved in an open C shape.',m:'Closing thumb against fingers like O.'},
+  {id:'D',out:'D',meaning:'Letter D',cat:'Alphabet',lvl:'Beginner',c:[1,0,1,1,1],d:'Index finger straight up, thumb touching middle/ring tips to form a circle.',m:'Extending middle finger.'},
+  {id:'E',out:'E',meaning:'Letter E',cat:'Alphabet',lvl:'Beginner',c:[1,0.7,0.7,0.7,0.7],d:'All fingers curled tightly with fingertips resting on the thumb.',m:'Straightening fingers.'},
+  {id:'F',out:'F',meaning:'Letter F',cat:'Alphabet',lvl:'Beginner',c:[1,1,0,0,0],d:'Index and thumb pinched together in a circle; middle, ring, and pinky straight up.',m:'Curling the outer three fingers.'},
+  {id:'G',out:'G',meaning:'Letter G',cat:'Alphabet',lvl:'Intermediate',c:[0,0,1,1,1],d:'Index finger and thumb pointing sideways horizontally, parallel to each other.',m:'Pointing straight up like L.'},
+  {id:'H',out:'H',meaning:'Letter H',cat:'Alphabet',lvl:'Intermediate',c:[1,0,0,1,1],d:'Index and middle fingers extended sideways horizontally together.',m:'Pointing fingers vertically.'},
+  {id:'I',out:'I',meaning:'Letter I',cat:'Alphabet',lvl:'Beginner',c:[1,1,1,1,0],d:'Pinky finger extended straight up, all other fingers and thumb curled.',m:'Extending thumb too (which is Y).'},
+  {id:'J',out:'J',meaning:'Letter J',cat:'Alphabet',lvl:'Intermediate',c:[1,1,1,1,0],d:'Pinky extended and tilted/swooped in a J curve.',m:'Keeping hand upright like I.'},
+  {id:'K',out:'K',meaning:'Letter K',cat:'Alphabet',lvl:'Intermediate',c:[0,0,0,1,1],d:'Index and middle fingers spread in a V with thumb extended upward between them.',m:'Folding thumb away.'},
+  {id:'L',out:'L',meaning:'Letter L',cat:'Alphabet',lvl:'Beginner',c:[0,0,1,1,1],d:'Index finger pointing straight up, thumb extended out 90 degrees to form an L.',m:'Tucking thumb in.'},
+  {id:'M',out:'M',meaning:'Letter M',cat:'Alphabet',lvl:'Intermediate',c:[1,0.8,0.8,0.8,1],d:'Closed fist with thumb tucked under index, middle, and ring fingers.',m:'Thumb on outside.'},
+  {id:'N',out:'N',meaning:'Letter N',cat:'Alphabet',lvl:'Intermediate',c:[1,0.8,0.8,1,1],d:'Closed fist with thumb tucked under index and middle fingers.',m:'Untucking thumb.'},
+  {id:'O',out:'O',meaning:'Letter O',cat:'Alphabet',lvl:'Beginner',c:[0.6,0.6,0.6,0.6,0.6],d:'All fingertips curved to touch the thumb tip, forming a closed O.',m:'Leaving a wide gap like C.'},
+  {id:'P',out:'P',meaning:'Letter P',cat:'Alphabet',lvl:'Intermediate',c:[0,0,0,1,1],d:'Index and middle fingers extended with hand pointing downward.',m:'Pointing upward.'},
+  {id:'Q',out:'Q',meaning:'Letter Q',cat:'Alphabet',lvl:'Intermediate',c:[0,0,1,1,1],d:'Thumb and index finger extended pointing downward.',m:'Pointing upward.'},
+  {id:'R',out:'R',meaning:'Letter R',cat:'Alphabet',lvl:'Intermediate',c:[1,0,0,1,1],d:'Index and middle fingers extended straight up and crossed over each other.',m:'Spreading them apart like V.'},
+  {id:'S',out:'S',meaning:'Letter S',cat:'Alphabet',lvl:'Beginner',c:[1,1,1,1,1],d:'Closed fist with thumb crossed horizontally over the front of curled fingers.',m:'Thumb upright on side like A.'},
+  {id:'T',out:'T',meaning:'Letter T',cat:'Alphabet',lvl:'Intermediate',c:[0.5,1,1,1,1],d:'Fist with thumb tucked between index and middle finger.',m:'Extending fingers.'},
+  {id:'U',out:'U',meaning:'Letter U',cat:'Alphabet',lvl:'Beginner',c:[1,0,0,1,1],d:'Index and middle fingers extended straight up and held tightly together.',m:'Spreading fingers into a V.'},
+  {id:'V',out:'V',meaning:'Letter V',cat:'Alphabet',lvl:'Beginner',c:[1,0,0,1,1],d:'Index and middle fingers extended straight up and spread apart in a V (palm to camera).',m:'Keeping fingers touching like U.'},
+  {id:'W',out:'W',meaning:'Letter W',cat:'Alphabet',lvl:'Beginner',c:[1,0,0,0,1],d:'Index, middle, and ring fingers extended and spread in a W (palm to camera).',m:'Extending pinky.'},
+  {id:'X',out:'X',meaning:'Letter X',cat:'Alphabet',lvl:'Intermediate',c:[1,0.5,1,1,1],d:'Index finger half-bent like a hook, other fingers curled.',m:'Straightening index completely.'},
+  {id:'Y',out:'Y',meaning:'Letter Y',cat:'Alphabet',lvl:'Beginner',c:[0,1,1,1,0],d:'Thumb and pinky extended wide out; index, middle, and ring curled.',m:'Extending index finger.'},
+  {id:'Z',out:'Z',meaning:'Letter Z',cat:'Alphabet',lvl:'Intermediate',c:[1,0,1,1,1],d:'Index finger extended pointing sideways/diagonally to trace Z.',m:'Using multiple fingers.'},
+
+  // Numbers (0-9) -> Tip: Show with back of hand to camera (or specific finger pinches)
+  {id:'0',out:'0',meaning:'Number 0',cat:'Numbers',lvl:'Beginner',c:[0.6,0.6,0.6,0.6,0.6],d:'All fingertips touching thumb tip in a round zero shape.',m:'Leaving fingers open.'},
+  {id:'1',out:'1',meaning:'Number 1',cat:'Numbers',lvl:'Beginner',c:[1,0,1,1,1],d:'Index finger extended straight up (show back of hand to camera to separate from D).',m:'Extending thumb.'},
+  {id:'2',out:'2',meaning:'Number 2',cat:'Numbers',lvl:'Beginner',c:[1,0,0,1,1],d:'Index and middle fingers extended in a V with back of hand facing camera.',m:'Facing palm forward (which is V).'},
+  {id:'3',out:'3',meaning:'Number 3',cat:'Numbers',lvl:'Beginner',c:[0,0,0,1,1],d:'Thumb, index, and middle fingers extended upright; ring and pinky curled.',m:'Using index, middle, ring (which is W/6).'},
+  {id:'4',out:'4',meaning:'Number 4',cat:'Numbers',lvl:'Beginner',c:[1,0,0,0,0],d:'Four fingers extended and spread apart (or back of hand to camera), thumb folded in.',m:'Keeping fingers glued together like B.'},
+  {id:'5',out:'5',meaning:'Number 5',cat:'Numbers',lvl:'Beginner',c:[0,0,0,0,0],d:'All five fingers extended and spread wide apart.',m:'Curling thumb.'},
+  {id:'6',out:'6',meaning:'Number 6',cat:'Numbers',lvl:'Intermediate',c:[1,0,0,0,1],d:'Thumb and pinky touching; index, middle, and ring extended (or back of hand 3-finger pose).',m:'Touching wrong finger.'},
+  {id:'7',out:'7',meaning:'Number 7',cat:'Numbers',lvl:'Intermediate',c:[1,0,0,1,0],d:'Thumb touching ring finger tip; index, middle, and pinky extended up.',m:'Curling pinky.'},
+  {id:'8',out:'8',meaning:'Number 8',cat:'Numbers',lvl:'Intermediate',c:[1,0,1,0,0],d:'Thumb touching middle finger tip; index, ring, and pinky extended up.',m:'Curling ring finger.'},
+  {id:'9',out:'9',meaning:'Number 9',cat:'Numbers',lvl:'Intermediate',c:[1,1,0,0,0],d:'Thumb touching index finger tip with back of hand / sideways orientation.',m:'Confusing with F.'},
+
+  // Single-Hand, Body-Anchored & Dual-Hand Everyday Words/Phrases
+  {id:'ILY',out:'I love you',meaning:'I love you',cat:'Phrase',lvl:'Beginner',c:[0,0,1,1,0],d:'Thumb, index, and pinky extended; middle and ring curled.',m:'Extending ring finger.'},
+  {id:'HELLO',out:'Hello',meaning:'Hello',cat:'Phrase',lvl:'Beginner',c:[0,0,0,0,0],d:'Open hand raised near your forehead/temple like a friendly salute.',m:'Keeping hand low by waist.'},
+  {id:'THANKYOU',out:'Thank you',meaning:'Thank you',cat:'Phrase',lvl:'Beginner',c:[1,0,0,0,0],d:'Flat open hand touching or starting right in front of your chin/mouth.',m:'Using a closed fist.'},
+  {id:'HOME',out:'Home',meaning:'Home',cat:'Phrase',lvl:'Beginner',c:[0.5,0.5,0.5,0.5,0.5],d:'Pinched/curved O-hand touching near your cheek or jawline.',m:'Spreading fingers wide.'},
+  {id:'EAT',out:'Eat',meaning:'Eat / Food',cat:'Phrase',lvl:'Beginner',c:[0.6,0.6,0.6,0.6,0.6],d:'Pinched fingertips brought directly to the mouth.',m:'Using an open flat hand.'},
+  {id:'SORRY',out:'Sorry',meaning:'Sorry',cat:'Phrase',lvl:'Beginner',c:[0,1,1,1,1],d:'Closed fist (A/S shape) held against the center of your chest.',m:'Using an open palm.'},
+  {id:'PLEASE',out:'Please',meaning:'Please',cat:'Phrase',lvl:'Beginner',c:[0,0,0,0,0],d:'Flat open hand held directly against the center of your chest.',m:'Using a closed fist (which is Sorry).'},
+  {id:'LOVE',out:'Love',meaning:'Love',cat:'Phrase',lvl:'Beginner',c:[1,1,1,1,1],d:'Both hands in fists crossed or held close together over your chest.',m:'Using only one hand.'},
+  {id:'STOP',out:'Stop',meaning:'Stop',cat:'Phrase',lvl:'Beginner',c:[0,0,0,0,0],d:'Both hands open with one flat hand chopping onto the other open palm.',m:'Using only one hand.'},
+  {id:'HELP',out:'Help',meaning:'Help',cat:'Phrase',lvl:'Intermediate',c:[0,1,1,1,1],d:'Two hands together: one closed fist (thumbs-up A) resting on the flat palm of the other hand.',m:'Separating hands far apart.'},
+  {id:'MORE',out:'More',meaning:'More',cat:'Phrase',lvl:'Beginner',c:[0.5,0.5,0.5,0.5,0.5],d:'Both hands in pinched O-shapes touching fingertips together in front of chest.',m:'Keeping hands flat.'},
+  {id:'FRIEND',out:'Friend',meaning:'Friend',cat:'Phrase',lvl:'Intermediate',c:[1,0,1,1,1],d:'Both hands with index fingers extended/hooked together close in front of you.',m:'Using open palms.'},
+  {id:'PRAY',out:'Namaste / Pray',meaning:'Namaste / Pray',cat:'Phrase',lvl:'Beginner',c:[0,0,0,0,0],d:'Both open palms pressed close together in front of chest.',m:'Keeping hands far apart.'},
+  {id:'TIMEOUT',out:'Time out',meaning:'Time out',cat:'Phrase',lvl:'Beginner',c:[0,0,0,0,0],d:'Two hands forming a T shape (one flat hand touching the index tip of the other).',m:'Using closed fists.'},
+  {id:'YES',out:'Yes',meaning:'Yes',cat:'Phrase',lvl:'Beginner',c:[0,1,1,1,1],d:'Thumbs-up gesture held clearly to the side.',m:'Tucking thumb in.'},
+  {id:'NO',out:'No',meaning:'No',cat:'Phrase',lvl:'Beginner',c:[0.5,0.3,0.3,1,1],d:'Index and middle fingers pinched down onto the thumb tip (ring and pinky curled).',m:'Extending ring and pinky.'},
+  {id:'CALL',out:'Call me',meaning:'Call me',cat:'Phrase',lvl:'Beginner',c:[0,1,1,1,0],d:'Y-handshape (thumb and pinky out) held right up near your ear/jaw.',m:'Holding Y hand far from head.'},
+  {id:'THINK',out:'Think',meaning:'Think / Know',cat:'Phrase',lvl:'Beginner',c:[1,0,1,1,1],d:'Index finger pointing to your forehead/temple.',m:'Holding hand low.'},
+  {id:'SEE',out:'See',meaning:'See / Look',cat:'Phrase',lvl:'Beginner',c:[1,0,0,1,1],d:'V-handshape held up right near your eyes/cheek.',m:'Holding hand down by chest.'},
+  {id:'WATER',out:'Water',meaning:'Water',cat:'Phrase',lvl:'Beginner',c:[1,0,0,0,1],d:'W-handshape (3 fingers up) held directly near your chin/mouth.',m:'Holding W hand far away.'}
+];
+
+const st={get(k,v){try{const x=localStorage.getItem(k);return x==null?v:JSON.parse(x)}catch{return v}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const S={curls:[0,0,0,0,0],pose:null};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
+
+$('#vocabCount').textContent = D.length;
+
+/* ==== STABILIZER & MESSAGE LOGGING ==== */
+class Stab{
+  constructor(n=5,cool=1100){this.n=n;this.cool=cool;this.h=[];this.last=0;this.le=null}
+  push(l,t){
+    this.h.push(l);
+    if(this.h.length>this.n)this.h.shift();
+    if(l===null)this.le=null;
+    if(l!==null&&this.h.length===this.n&&this.h.every(x=>x===l)&&l!==this.le&&t-this.last>=this.cool){
+      this.le=l;this.last=t;return l;
+    }
+    return null;
+  }
+}
+const stab=new Stab();let log=[],timer=null;
+
+function addWord(e){
+  if(!e) return;
+  const m=$('#msg');
+  // If single letter/number and previous was single letter, optionally space or append cleanly
+  m.value=(m.value.trim()+' '+e.out).trim();
+  log.push({out:e.out});
+  rlog();
+  speakText(e.out);
+}
+function rlog(){$('#log').innerHTML=log.length?log.map(l=>`<span>${l.out}</span>`).join(''):'<span class="mu" style="background:none">None yet.</span>'}
+
+function updateUIResult(id, conf) {
+  const entry = D.find(e => e.id === id);
+  const ok = entry && conf >= 0.75;
+  $('#cg').textContent = ok ? `${entry.meaning} (${entry.out})` : 'Uncertain';
+  $('#cf').textContent = Math.round(conf * 100) + '%';
+  $('#cb').style.width = (conf * 100) + '%';
+  const w = stab.push(ok ? id : null, Date.now());
+  if (w && entry) {
+    addWord(entry);
+    toast('Recognized: ' + entry.out);
+  }
+}
+
+/* ==== GEOMETRIC RULE ENGINE (HANDS + BODY POSE + FACE) ==== */
+const dist2D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const dist3D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
+
+function analyzeSingleHand(lm) {
+  const wrist = lm[0];
+  const palmSize = dist2D(wrist, lm[9]) || 0.1;
+
+  // Finger extension check using both Y-direction and wrist distance
+  const fingerExtended = (tip, pip, mcp) => {
+    const dTip = dist2D(lm[tip], wrist);
+    const dPip = dist2D(lm[pip], wrist);
+    const dMcp = dist2D(lm[mcp], wrist);
+    return dTip > dPip * 1.08 && dTip > dMcp * 1.25;
+  };
+
+  const fingerHalfBent = (tip, pip, mcp) => {
+    const dTip = dist2D(lm[tip], wrist);
+    const dPip = dist2D(lm[pip], wrist);
+    const dMcp = dist2D(lm[mcp], wrist);
+    return dTip > dMcp * 1.05 && dTip <= dPip * 1.12;
+  };
+
+  // Thumb extension: distance from thumb tip (4) to index MCP (5) and pinky MCP (17)
+  const thumbToPinkyBase = dist2D(lm[4], lm[17]) / palmSize;
+  const thumbToIndexMcp = dist2D(lm[4], lm[5]) / palmSize;
+  const thumbExt = thumbToPinkyBase > 1.15 && thumbToIndexMcp > 0.55;
+
+  const idxExt = fingerExtended(8, 6, 5);
+  const midExt = fingerExtended(12, 10, 9);
+  const rngExt = fingerExtended(16, 14, 13);
+  const pnkExt = fingerExtended(20, 18, 17);
+
+  const curls = [
+    thumbExt ? 0 : 1,
+    idxExt ? 0 : (fingerHalfBent(8, 6, 5) ? 0.5 : 1),
+    midExt ? 0 : (fingerHalfBent(12, 10, 9) ? 0.5 : 1),
+    rngExt ? 0 : (fingerHalfBent(16, 14, 13) ? 0.5 : 1),
+    pnkExt ? 0 : (fingerHalfBent(20, 18, 17) ? 0.5 : 1)
+  ];
+
+  // Key pinch distances normalized by palm size
+  const pinchIdx = dist2D(lm[4], lm[8]) / palmSize;
+  const pinchMid = dist2D(lm[4], lm[12]) / palmSize;
+  const pinchRng = dist2D(lm[4], lm[16]) / palmSize;
+  const pinchPnk = dist2D(lm[4], lm[20]) / palmSize;
+
+  // Spread between index and middle tips
+  const spreadIdxMid = dist2D(lm[8], lm[12]) / palmSize;
+  const spreadMidRng = dist2D(lm[12], lm[16]) / palmSize;
+
+  // Hand orientation (vertical vs horizontal vs pointing down)
+  const dx = lm[9].x - wrist.x;
+  const dy = lm[9].y - wrist.y; // negative dy means hand pointing UP
+  const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.15;
+  const isPointingDown = dy > 0.08 && Math.abs(dy) > Math.abs(dx);
+
+  // Palm facing vs Back of hand facing (using cross product of wrist->indexMCP and wrist->pinkyMCP)
+  const v1x = lm[5].x - wrist.x, v1y = lm[5].y - wrist.y;
+  const v2x = lm[17].x - wrist.x, v2y = lm[17].y - wrist.y;
+  const crossZ = v1x * v2y - v1y * v2x;
+
+  // Center of hand
+  const center = lm[9];
+
+  return {
+    lm, wrist, center, palmSize,
+    thumbExt, idxExt, midExt, rngExt, pnkExt, curls,
+    pinchIdx, pinchMid, pinchRng, pinchPnk,
+    spreadIdxMid, spreadMidRng,
+    isHorizontal, isPointingDown, crossZ
+  };
+}
+
+function classifyHolistic(h1, h2, poseLm) {
+  // 1. EXTRACT BODY ANCHORS IF POSE IS PRESENT
+  let nose = null, chin = null, forehead = null, chest = null, lEar = null, rEar = null, shoulderWidth = 0.25;
+  if (poseLm && poseLm.length > 12) {
+    nose = poseLm[0];
+    lEar = poseLm[7];
+    rEar = poseLm[8];
+    const lSh = poseLm[11], rSh = poseLm[12];
+    if (lSh && rSh) {
+      shoulderWidth = dist2D(lSh, rSh) || 0.25;
+      chest = { x: (lSh.x + rSh.x) / 2, y: (lSh.y + rSh.y) / 2 + shoulderWidth * 0.25 };
+    }
+    if (nose) {
+      chin = { x: nose.x, y: nose.y + shoulderWidth * 0.22 };
+      forehead = { x: nose.x, y: nose.y - shoulderWidth * 0.28 };
+    }
+  }
+
+  // 2. DUAL-HAND GESTURES (When both hands are visible!)
+  if (h1 && h2) {
+    const handsDist = dist2D(h1.center, h2.center) / h1.palmSize;
+    const h1Open = h1.idxExt && h1.midExt && h1.rngExt && h1.pnkExt;
+    const h2Open = h2.idxExt && h2.midExt && h2.rngExt && h2.pnkExt;
+    const h1Fist = !h1.idxExt && !h1.midExt && !h1.rngExt && !h1.pnkExt;
+    const h2Fist = !h2.idxExt && !h2.midExt && !h2.rngExt && !h2.pnkExt;
+
+    // LOVE: Both fists held close or crossed near chest
+    if (h1Fist && h2Fist && handsDist < 2.4) {
+      return { id: 'LOVE', conf: 0.94 };
+    }
+    // MORE: Both hands with pinched fingers touching tips
+    if (h1.pinchIdx < 0.55 && h2.pinchIdx < 0.55 && dist2D(h1.lm[8], h2.lm[8]) / h1.palmSize < 1.2) {
+      return { id: 'MORE', conf: 0.93 };
+    }
+    // FRIEND: Both hands with only index extended/hooked close together
+    if (h1.idxExt && !h1.midExt && h2.idxExt && !h2.midExt && dist2D(h1.lm[8], h2.lm[8]) / h1.palmSize < 1.2) {
+      return { id: 'FRIEND', conf: 0.92 };
+    }
+    // HELP: One fist resting on one open palm
+    if (((h1Fist && h2Open) || (h2Fist && h1Open)) && handsDist < 1.8) {
+      return { id: 'HELP', conf: 0.92 };
+    }
+    // TIME OUT: One open hand perpendicular to one index/open hand forming T
+    if (((h1Open && h2.idxExt && !h2.rngExt) || (h2Open && h1.idxExt && !h1.rngExt)) && handsDist < 1.7) {
+      return { id: 'TIMEOUT', conf: 0.90 };
+    }
+    // STOP vs PRAY: Both hands open and close together
+    if (h1Open && h2Open && handsDist < 1.8) {
+      if (h1.isHorizontal !== h2.isHorizontal) return { id: 'STOP', conf: 0.93 };
+      return { id: 'PRAY', conf: 0.91 };
+    }
+  }
+
+  // 3. BODY-ANCHORED SINGLE-HAND GESTURES (Using Body Pose!)
+  const h = h1;
+  const allOpen = h.idxExt && h.midExt && h.rngExt && h.pnkExt;
+  const allCurled = !h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt;
+
+  if (poseLm) {
+    // Near Forehead / Temple
+    if (forehead && dist2D(h.lm[8], forehead) < shoulderWidth * 0.55) {
+      if (allOpen) return { id: 'HELLO', conf: 0.94 };
+      if (h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt) return { id: 'THINK', conf: 0.92 };
+    }
+    // Near Eyes / Nose
+    if (nose && dist2D(h.lm[8], nose) < shoulderWidth * 0.45) {
+      if (h.idxExt && h.midExt && !h.rngExt && !h.pnkExt) return { id: 'SEE', conf: 0.92 };
+    }
+    // Near Ear (Call Me)
+    const nearEar = (lEar && dist2D(h.center, lEar) < shoulderWidth * 0.5) || (rEar && dist2D(h.center, rEar) < shoulderWidth * 0.5);
+    if (nearEar && h.thumbExt && h.pnkExt && !h.idxExt && !h.midExt) {
+      return { id: 'CALL', conf: 0.94 };
+    }
+    // Near Chin / Mouth
+    if (chin && dist2D(h.lm[8], chin) < shoulderWidth * 0.5) {
+      if (h.idxExt && h.midExt && h.rngExt && !h.pnkExt) return { id: 'WATER', conf: 0.94 };
+      if (allOpen) return { id: 'THANKYOU', conf: 0.93 };
+      if (h.pinchIdx < 0.55 && h.pinchMid < 0.65) {
+        // Distinguish EAT (directly at mouth) vs HOME (towards cheek)
+        if (Math.abs(h.lm[8].x - chin.x) > shoulderWidth * 0.16) return { id: 'HOME', conf: 0.91 };
+        return { id: 'EAT', conf: 0.91 };
+      }
+    }
+    // On Chest (PLEASE vs SORRY)
+    if (chest && dist2D(h.center, chest) < shoulderWidth * 0.48) {
+      if (allOpen) return { id: 'PLEASE', conf: 0.93 };
+      if (allCurled) return { id: 'SORRY', conf: 0.93 };
+    }
+  }
+
+  // 4. SINGLE-HAND ALPHABET, NUMBERS & STATIC PHRASES
+  // Pointing Downward: P vs Q
+  if (h.isPointingDown) {
+    if (h.idxExt && h.midExt && !h.rngExt) return { id: 'P', conf: 0.88 };
+    if (h.idxExt && !h.midExt && !h.rngExt) return { id: 'Q', conf: 0.88 };
+  }
+
+  // Horizontal Hand: G vs H
+  if (h.isHorizontal) {
+    if (h.idxExt && h.midExt && !h.rngExt && !h.pnkExt) return { id: 'H', conf: 0.91 };
+    if (h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt) return { id: 'G', conf: 0.90 };
+  }
+
+  // ILY (Thumb + Index + Pinky)
+  if (h.thumbExt && h.idxExt && !h.midExt && !h.rngExt && h.pnkExt) {
+    return { id: 'ILY', conf: 0.96 };
+  }
+
+  // Y (Thumb + Pinky only)
+  if (h.thumbExt && !h.idxExt && !h.midExt && !h.rngExt && h.pnkExt) {
+    return { id: 'Y', conf: 0.95 };
+  }
+
+  // I vs J (Pinky only)
+  if (!h.thumbExt && !h.idxExt && !h.midExt && !h.rngExt && h.pnkExt) {
+    const pinkyTilt = Math.abs(h.lm[20].x - h.lm[17].x) / h.palmSize;
+    return { id: pinkyTilt > 0.45 ? 'J' : 'I', conf: 0.92 };
+  }
+
+  // All 5 Extended -> 5
+  if (h.thumbExt && h.idxExt && h.midExt && h.rngExt && h.pnkExt) {
+    return { id: '5', conf: 0.95 };
+  }
+
+  // 4 Fingers Extended (Thumb folded in) -> B vs 4
+  if (!h.thumbExt && h.idxExt && h.midExt && h.rngExt && h.pnkExt) {
+    // Spread fingers or turned palm = 4; tight fingers = B
+    return { id: h.spreadIdxMid > 0.34 ? '4' : 'B', conf: 0.92 };
+  }
+
+  // 3 Fingers Extended:
+  // Thumb + Index + Middle -> 3 vs K
+  if (h.thumbExt && h.idxExt && h.midExt && !h.rngExt && !h.pnkExt) {
+    const thumbHigh = h.lm[4].y < h.lm[5].y;
+    return { id: (thumbHigh && h.spreadIdxMid < 0.42) ? 'K' : '3', conf: 0.91 };
+  }
+  // Index + Middle + Ring -> W vs 6
+  if (!h.thumbExt && h.idxExt && h.midExt && h.rngExt && !h.pnkExt) {
+    return { id: h.pinchPnk < 0.55 ? '6' : 'W', conf: 0.92 };
+  }
+  // Number 7 (Index + Middle + Pinky up, Ring pinched to thumb)
+  if (h.idxExt && h.midExt && !h.rngExt && h.pnkExt) {
+    return { id: '7', conf: 0.92 };
+  }
+  // Number 8 (Index + Ring + Pinky up, Middle pinched to thumb)
+  if (h.idxExt && !h.midExt && h.rngExt && h.pnkExt) {
+    return { id: '8', conf: 0.92 };
+  }
+  // F vs 9 (Middle + Ring + Pinky up, Index pinched to thumb)
+  if (!h.idxExt && h.midExt && h.rngExt && h.pnkExt) {
+    return { id: h.spreadMidRng > 0.35 ? '9' : 'F', conf: 0.92 };
+  }
+
+  // 2 Fingers Extended:
+  // Thumb + Index -> L
+  if (h.thumbExt && h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt) {
+    return { id: 'L', conf: 0.94 };
+  }
+  // Index + Middle (Thumb in) -> R, U, V, 2
+  if (!h.thumbExt && h.idxExt && h.midExt && !h.rngExt && !h.pnkExt) {
+    if (h.spreadIdxMid < 0.22) {
+      // Crossed fingers = R, parallel tight = U
+      const idxTipX = h.lm[8].x, midTipX = h.lm[12].x;
+      const idxMcpX = h.lm[5].x, midMcpX = h.lm[9].x;
+      const crossed = (idxTipX - midTipX) * (idxMcpX - midMcpX) < 0;
+      return { id: crossed ? 'R' : 'U', conf: 0.91 };
+    }
+    // V vs 2 separated by palm orientation (crossZ)
+    return { id: h.crossZ > 0 ? '2' : 'V', conf: 0.92 };
+  }
+
+  // 1 Finger Extended (Index only) -> D vs 1 vs Z
+  if (!h.thumbExt && h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt) {
+    if (h.pinchMid < 0.5) return { id: 'D', conf: 0.92 };
+    return { id: '1', conf: 0.92 };
+  }
+
+  // Half-bent / Curved shapes -> X, NO, O, 0, C
+  if (!h.idxExt && !h.midExt && !h.rngExt && !h.pnkExt) {
+    // NO: Index & Middle half-bent pinching thumb
+    if (h.pinchIdx < 0.45 && h.pinchMid < 0.5 && h.curls[3] === 1 && h.curls[4] === 1) {
+      return { id: 'NO', conf: 0.89 };
+    }
+    // O / 0: All fingers curved touching thumb
+    if (h.pinchIdx < 0.5 && h.pinchMid < 0.55 && h.pinchRng < 0.65) {
+      return { id: h.crossZ > 0 ? '0' : 'O', conf: 0.90 };
+    }
+    // C: Fingers half-bent in open curve
+    if (h.curls[1] === 0.5 && h.curls[2] === 0.5 && h.pinchIdx >= 0.5) {
+      return { id: 'C', conf: 0.88 };
+    }
+    // X: Only index half-bent hook
+    if (h.curls[1] === 0.5 && h.curls[2] === 1 && h.curls[3] === 1) {
+      return { id: 'X', conf: 0.89 };
+    }
+
+    // Closed Fist variations: A, S, E, T, M, N, YES
+    if (h.thumbExt && h.lm[4].y < h.lm[5].y - h.palmSize * 0.2) {
+      return { id: 'YES', conf: 0.90 };
+    }
+    if (h.thumbExt || dist2D(h.lm[4], h.lm[6]) > h.palmSize * 0.45) {
+      return { id: 'A', conf: 0.91 };
+    }
+    if (h.lm[4].y < h.lm[8].y) {
+      return { id: 'S', conf: 0.89 };
+    }
+    return { id: 'E', conf: 0.86 };
+  }
+
+  // Fallback Euclidean curl match
+  let b=null, bd=9;
+  for(const e of D){
+    const d=Math.hypot(...h.curls.map((v,i)=>v-e.c[i]))/Math.sqrt(5);
+    if(d<bd){bd=d;b=e;}
+  }
+  return { id: b.id, conf: Math.max(0, 1 - bd / 0.55) };
+}
+
+/* ==== MANUAL SLIDER SIMULATION ==== */
+function frameSim(){
+  let b=null,bd=9;
+  for(const e of D){const d=Math.hypot(...S.curls.map((v,i)=>v-e.c[i]))/Math.sqrt(5);if(d<bd){bd=d;b=e}}
+  updateUIResult(b.id, Math.max(0, 1 - bd / 0.5));
+}
+$('#demoBtn').onclick=()=>{
+  if(timer){clearInterval(timer);timer=null;$('#demoBtn').textContent='Start Manual Slider Sim';$('#hs').textContent='idle'}
+  else{timer=setInterval(frameSim,120);$('#demoBtn').textContent='Stop Manual Slider Sim';$('#hs').textContent='Manual Slider Sim'}
+};
+
+/* ==== MESSAGE BUILDER CONTROLS ==== */
+$('#undo').onclick=()=>{const l=log.pop();if(!l)return toast('Nothing to undo');const m=$('#msg'),i=m.value.lastIndexOf(l.out);if(i>=0)m.value=(m.value.slice(0,i)+m.value.slice(i+l.out.length)).replace(/\s+/g,' ').trim();rlog()};
+$('#spaceBtn').onclick=()=>{const m=$('#msg');m.value+=' ';toast('Space added')};
+$('#clr').onclick=()=>{$('#msg').value='';log=[];rlog();stab.le=null};
+$('#cp').onclick=async()=>{const m=$('#msg');if(!m.value)return toast('Nothing to copy');try{await navigator.clipboard.writeText(m.value);toast('Copied to clipboard')}catch{m.select();toast('Press Ctrl+C to copy')}};
+$('#speakMsg').onclick=()=>{const m=$('#msg');if(m.value)forceSpeak(m.value);else toast('Nothing to speak')};
+['Hello','Thank you','Please','Sorry','Help','Stop','Love','Home','Water','Yes','No'].forEach(p=>{
+  const b=document.createElement('button');b.className='btn g sm';b.textContent=p;
+  b.onclick=()=>{const m=$('#msg');m.value=(m.value+' '+p).trim();forceSpeak(p);};
+  $('#phr').append(b);
+});
+
+/* ==== MEDIAPIPE HOLISTIC (BODY + FACE + 2 HANDS) CAMERA SETUP ==== */
+let camera=null, holisticInstance=null, videoElement=null, overlayCanvas=null, overlayCtx=null;
+
+function onHolisticResults(results) {
+  try {
+    if (overlayCanvas && overlayCtx) {
+      overlayCtx.save();
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      if ($('#showSkel')?.checked) {
+        // Draw Body Pose Skeleton
+        if (results.poseLandmarks && window.drawConnectors) {
+          drawConnectors(overlayCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#38bdf866', lineWidth: 2});
+          drawLandmarks(overlayCtx, results.poseLandmarks, {color: '#38bdf8', lineWidth: 1, radius: 2});
+        }
+        // Draw Left & Right Hand Skeletons
+        if (results.leftHandLandmarks && window.drawConnectors) {
+          drawConnectors(overlayCtx, results.leftHandLandmarks, HAND_CONNECTIONS, {color: '#2dd4bf', lineWidth: 3});
+          drawLandmarks(overlayCtx, results.leftHandLandmarks, {color: '#ffffff', lineWidth: 1, radius: 3});
+        }
+        if (results.rightHandLandmarks && window.drawConnectors) {
+          drawConnectors(overlayCtx, results.rightHandLandmarks, HAND_CONNECTIONS, {color: '#6ee7b7', lineWidth: 3});
+          drawLandmarks(overlayCtx, results.rightHandLandmarks, {color: '#ffffff', lineWidth: 1, radius: 3});
+        }
+      }
+      overlayCtx.restore();
+    }
+
+    const hasBody = !!(results.poseLandmarks && results.poseLandmarks.length > 0);
+    $('#bodySt').textContent = hasBody ? 'Body Pose: locked' : 'Body Pose: not in frame';
+    $('#bodySt').className = hasBody ? 'badge ok' : 'badge warn';
+
+    const hands = [];
+    if (results.rightHandLandmarks) hands.push(analyzeSingleHand(results.rightHandLandmarks));
+    if (results.leftHandLandmarks) hands.push(analyzeSingleHand(results.leftHandLandmarks));
+
+    if (hands.length === 0) {
+      $('#hs').textContent = hasBody ? 'Body tracked — raise hand(s) to sign' : 'No hands detected';
+      stab.push(null, Date.now());
+      return;
+    }
+
+    $('#hs').textContent = `${hands.length} Hand${hands.length > 1 ? 's' : ''} + ${hasBody ? 'Body' : 'Hand'} Active`;
+    S.curls = hands[0].curls;
+
+    const pred = classifyHolistic(hands[0], hands[1] || null, results.poseLandmarks || null);
+    updateUIResult(pred.id, pred.conf);
+  } catch (err) {
+    console.error("Holistic frame error:", err);
+  }
+}
+
+$('#camOn').onclick=async()=>{
+  const v=$('#vid');
+  try {
+    $('#camOn').disabled=true;
+    $('#trackSt').textContent='Loading Holistic AI...';
+    videoElement = document.createElement('video');
+    videoElement.autoplay = true;
+    videoElement.muted = true;
+    videoElement.playsInline = true;
+
+    overlayCanvas = document.createElement('canvas');
+    overlayCanvas.className = 'overlay';
+    overlayCanvas.width = 640;
+    overlayCanvas.height = 480;
+    overlayCtx = overlayCanvas.getContext('2d');
+
+    holisticInstance = new Holistic({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`
+    });
+    holisticInstance.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      minDetectionConfidence: 0.55,
+      minTrackingConfidence: 0.55
+    });
+    holisticInstance.onResults(onHolisticResults);
+
+    camera = new Camera(videoElement, {
+      onFrame: async () => {
+        if (videoElement && holisticInstance) {
+          await holisticInstance.send({image: videoElement});
+        }
+      },
+      width: 640,
+      height: 480
+    });
+
+    await camera.start();
+    v.replaceChildren(videoElement, overlayCanvas);
+    $('#camSt').textContent='Camera: on';
+    $('#camSt').className='badge ok';
+    $('#trackSt').textContent='Holistic (Body + 2 Hands): active';
+    $('#camOff').disabled=false;
+  } catch(e) {
+    console.error(e);
+    v.innerHTML='<span class="bad-t">Camera error or permission denied. Make sure you are running via local server (http://localhost) and allow webcam access.</span>';
+    $('#camSt').textContent='Camera: error';
+    $('#camOn').disabled=false;
+  }
+};
+
+$('#camOff').onclick=()=>{
+  if(camera) { camera.stop(); camera = null; }
+  if(holisticInstance) { holisticInstance.close(); holisticInstance = null; }
+  $('#vid').innerHTML='<span>Camera is off.<br>Press <b>Start Camera</b> to load Body + 2-Hand AI.</span>';
+  $('#camSt').textContent='Camera: off';
+  $('#camSt').className='badge';
+  $('#trackSt').textContent='Holistic AI: ready';
+  $('#bodySt').textContent='Body: waiting';
+  $('#bodySt').className='badge';
+  $('#camOn').disabled=false;
+  $('#camOff').disabled=true;
+  $('#hs').textContent='idle';
+};
+
+/* ==== POSE CONTROL SHARED BY TRANSLATOR + 3D STUDIO ==== */
+function setPose(id){
+  const e=D.find(x=>x.id===id);if(!e)return;
+  S.pose=id;S.curls=[...e.c];
+  $$('#sliders input').forEach((s,i)=>s.value=e.c[i]);
+  $('#sn').textContent=e.meaning+' — "'+e.out+'" ('+e.lvl+')';
+  $('#sd').textContent=e.d;
+  $('#ss').innerHTML='<li>'+e.d+'</li><li>Common mistake to avoid: '+e.m+'</li>';
+  const ext=FN.filter((f,i)=>e.c[i]<.5);
+  $('#sk').textContent=ext.length?ext.join(', ')+' extended':'all fingers curled / pinched';
+  updateUIResult(e.id, 0.98);
+}
+FN.forEach((f,i)=>{
+  const r=document.createElement('label');r.className='sl';
+  r.innerHTML=f+'<input type="range" min="0" max="1" step=".05" value="0" aria-label="'+f+' curl">';
+  r.querySelector('input').oninput=ev=>{S.curls[i]=+ev.target.value;S.pose=null};
+  $('#sliders').append(r);
+});
+D.forEach(e=>{
+  [$('#quick'),$('#sq')].forEach(p=>{
+    const b=document.createElement('button');b.className='btn g sm';
+    b.textContent=e.id;b.title=e.meaning;
+    b.onclick=()=>setPose(e.id);
+    p.append(b);
+  });
+});
+
+/* ==== 3D STUDIO (THREE.JS ARTICULATED HAND) ==== */
+let gl=null,page='home',playT=null;
+function startGL(){
+  const cv=$('#cv');if(gl){gl.resize();return}
+  let r;try{r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){cv.hidden=true;$('#nogl').hidden=false;return}
+  const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,50);cam.position.set(0,.3,8);
+  sc.add(new THREE.AmbientLight(0xffffff,.75));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(3,4,6);sc.add(dl);
+  const root=new THREE.Group();sc.add(root);
+  const jm=new THREE.MeshStandardMaterial({color:0xf4f7fb});
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(1.9,1.9,.45),new THREE.MeshStandardMaterial({color:0x1e5f6e})));
+  function chain(x,y,lens,rz){
+    const mats=[],piv=[];let par=root;
+    lens.forEach((L,i)=>{
+      const p=new THREE.Group();if(i===0){p.position.set(x,y,0);p.rotation.z=rz}else p.position.y=lens[i-1];par.add(p);
+      const mt=new THREE.MeshStandardMaterial({color:0x2dd4bf});
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(.14,.16,L,12),mt);m.position.y=L/2;p.add(m);
+      const j=new THREE.Mesh(new THREE.SphereGeometry(.19,12,12),jm);p.add(j);mats.push(mt);piv.push(p);par=p;
+    });
+    return{piv,mats};
+  }
+  const F=[chain(1.0,-.5,[.8,.6],-.7)];
+  [[-.7,.95,[.7,.5,.4]],[-.23,.95,[.8,.55,.4]],[.23,.95,[.75,.5,.4]],[.7,.95,[.6,.4,.35]]].forEach(a=>F.push(chain(a[0],a[1],a[2],0)));
+  const cc=[0,0,0,0,0],base0=F[0].piv[0].rotation.z;
+  let rx=-.2,ry=0,drag=null;
+  cv.onpointerdown=e=>{drag=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)};cv.onpointerup=()=>drag=null;
+  cv.onpointermove=e=>{if(!drag)return;ry+=(e.clientX-drag[0])*.01;rx+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY]};
+  cv.onwheel=e=>{e.preventDefault();cam.position.z=Math.min(14,Math.max(4,cam.position.z+e.deltaY*.005))};
+  $('#rs').onclick=()=>{rx=-.2;ry=0;cam.position.z=8};
+  function resize(){const w=cv.clientWidth,h=cv.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+  function tick(){
+    requestAnimationFrame(tick);if(page!=='studio')return;
+    FN.forEach((f,i)=>{
+      cc[i]+=(S.curls[i]-cc[i])*(reduce?1:.18);const c=cc[i],ch=F[i];
+      if(i===0){ch.piv[0].rotation.z=base0+c*1.6;ch.piv[0].rotation.x=c*.9;ch.piv[1].rotation.x=c*.6}
+      else{const k=[1.2,1.3,.8];ch.piv.forEach((p,j)=>p.rotation.x=c*k[j]*.95)}
+      ch.mats.forEach(m=>{const ex=c<.5;m.color.set(ex?0x6ee7b7:0x1f7a82);m.emissive.set(ex?0x134e4a:0x000000)});
+    });
+    root.rotation.set(rx,ry,0);r.render(sc,cam);
+  }
+  gl={resize};resize();addEventListener('resize',resize);tick();
+}
+$('#play').onclick=()=>{
+  if(playT){clearInterval(playT);playT=null;$('#play').textContent='Play demos';return}
+  let i=0;const go=()=>setPose(D[i++%D.length].id);go();playT=setInterval(go,2200);$('#play').textContent='Stop demos';
+};
+
+/* ==== LEARN & DICTIONARY ==== */
+let done=st.get('ss_done',[]);
+function lessons(){
+  const q=$('#ls').value.toLowerCase(),l=$('#ll').value;$('#lg').innerHTML='';
+  const list=D.filter(e=>(!l||e.lvl===l)&&(e.meaning+e.d+e.out).toLowerCase().includes(q));
+  if(!list.length)$('#lg').innerHTML='<p class="mu">No lessons match.</p>';
+  list.forEach(e=>{
+    const c=document.createElement('div');c.className='card';const dn=done.includes(e.id);
+    c.innerHTML=`<h3>${e.meaning} (${e.out})</h3><span class="badge">${e.cat}</span> <span class="badge">${e.lvl}</span><p>${e.d}</p><p class="mu"><b>Avoid:</b> ${e.m}</p><div class="row"><button class="btn g sm v">3D View</button><button class="btn g sm spk">🔊 Speak</button><button class="btn ${dn?'':'g'} sm dn">${dn?'Completed':'Mark Complete'}</button></div>`;
+    c.querySelector('.v').onclick=()=>{setPose(e.id);location.hash='studio'};
+    c.querySelector('.spk').onclick=()=>forceSpeak(e.out);
+    c.querySelector('.dn').onclick=()=>{done=dn?done.filter(x=>x!==e.id):[...done,e.id];st.set('ss_done',done);lessons();review()};
+    $('#lg').append(c);
+  });
+  $('#prog').textContent=done.length+' of '+D.length+' complete';
+  $('#pb').style.width=(done.length/D.length*100)+'%';
+}
+function review(){
+  $('#rv').innerHTML=done.length?done.map(id=>{const e=D.find(x=>x.id===id);return e?`<p><b>${e.meaning}</b>: ${e.d}</p>`:''}).join(''):'Complete a lesson and it will show up here.';
+}
+function quiz(){
+  const e=D[Math.floor(Math.random()*D.length)];
+  const o=[e,...D.filter(x=>x!==e).sort(()=>Math.random()-.5).slice(0,3)].sort(()=>Math.random()-.5);
+  $('#qz').innerHTML=`<p>Which description matches <b>${e.meaning} ("${e.out}")</b>?</p>`;
+  o.forEach(x=>{
+    const b=document.createElement('button');b.className='btn g opt';b.textContent=x.d;
+    b.onclick=()=>{
+      const ok=x===e;$$('#qz .opt').forEach(z=>z.disabled=true);
+      const m=document.createElement('p');m.className=ok?'ok-t':'bad-t';
+      m.textContent=ok?'Correct!':'Not quite. Correct answer: '+e.d;
+      const n=document.createElement('button');n.className='btn sm';n.textContent='Next Question';n.onclick=quiz;
+      $('#qz').append(m,n);
+    };
+    $('#qz').append(b);
+  });
+}
+['#ls','#ll'].forEach(s=>$(s).oninput=lessons);
+
+function dict(){
+  const q=$('#ds').value.toLowerCase(),c=$('#dc').value,l=$('#dl').value;$('#dg').innerHTML='';
+  const list=D.filter(e=>(!c||e.cat===c)&&(!l||e.lvl===l)&&(e.meaning+e.d+e.out).toLowerCase().includes(q));
+  if(!list.length)$('#dg').innerHTML='<p class="mu">No signs match these filters.</p>';
+  list.forEach(e=>{
+    const bars=e.c.map((v,i)=>`<rect x="${6+i*18}" y="${50-(1-v)*40-6}" width="12" height="${(1-v)*40+6}" rx="5" fill="${v<.5?'#6ee7b7':'#1f7a82'}"/>`).join('');
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<h3>${e.meaning} ("${e.out}")</h3><span class="badge">${e.cat}</span> <span class="badge">${e.lvl}</span> <span class="badge ok">Holistic Ready</span>
+    <svg viewBox="0 0 100 56" width="130" role="img" aria-label="Finger extension schematic">${bars}</svg>
+    <p><b>How to sign:</b> ${e.d}</p>
+    <div class="row"><button class="btn g sm v">See in 3D</button><button class="btn g sm spk">🔊 Hear Audio</button></div>`;
+    d.querySelector('.v').onclick=()=>{setPose(e.id);location.hash='studio'};
+    d.querySelector('.spk').onclick=()=>forceSpeak(e.out);
+    $('#dg').append(d);
+  });
+}
+['#ds','#dc','#dl'].forEach(s=>$(s).oninput=dict);
+
+/* ==== ROUTING ==== */
+const R=['home','translator','studio','learn','dictionary','about'];
+function route(){
+  const h=location.hash.slice(1);page=R.includes(h)?h:'home';
+  $$('.pg').forEach(p=>p.hidden=p.id!==page);
+  $$('nav a').forEach(a=>a.classList.toggle('on',a.hash==='#'+page));
+  if(page==='studio')startGL();
+  scrollTo(0,0);
+}
+addEventListener('hashchange',route);
+setPose('A');lessons();review();quiz();dict();route();
+</script></body></html>

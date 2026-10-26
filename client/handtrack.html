@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hand tracking test</title>
+<style>
+body{background:#0a1628;color:#e8f1f8;font-family:system-ui,sans-serif;text-align:center;margin:0;padding:1rem}
+.box{position:relative;display:inline-block;max-width:100%}
+video,canvas{width:640px;max-width:100%;height:auto;aspect-ratio:4/3;transform:scaleX(-1);border-radius:12px;background:#06101e}
+canvas{position:absolute;left:0;top:0}
+button{background:#2dd4bf;color:#04211e;border:0;border-radius:10px;padding:.6rem 1.2rem;font-size:1rem;font-weight:600;cursor:pointer}
+#s{font-size:1.2rem;margin:.8rem}
+</style></head><body>
+<h1>Hand tracking test</h1>
+<p id="s">Press the button to start.</p>
+<button id="b">Start camera</button>
+<div class="box" style="margin-top:1rem"><video id="v" playsinline muted></video><canvas id="c" width="640" height="480"></canvas></div>
+<script type="module">
+import {FilesetResolver,HandLandmarker,DrawingUtils} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+const s=document.getElementById('s'),b=document.getElementById('b'),v=document.getElementById('v'),c=document.getElementById('c'),x=c.getContext('2d');
+b.onclick=async()=>{
+  b.disabled=true;s.textContent='Loading hand model (needs internet)...';
+  try{
+    const fs=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    const hl=await HandLandmarker.createFromOptions(fs,{
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"},
+      runningMode:"VIDEO",numHands:1});
+    v.srcObject=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+    await v.play();
+    const du=new DrawingUtils(x);
+    (function loop(){
+      const r=hl.detectForVideo(v,performance.now());
+      x.clearRect(0,0,c.width,c.height);
+      if(r.landmarks.length){
+        s.textContent='Hand found ✅ (21 points)';
+        for(const lm of r.landmarks){
+          du.drawConnectors(lm,HandLandmarker.HAND_CONNECTIONS,{color:'#2dd4bf',lineWidth:3});
+          du.drawLandmarks(lm,{color:'#ffffff',radius:3});
+        }
+      }else s.textContent='No hand ❌ Show your hand to the camera';
+      requestAnimationFrame(loop);
+    })();
+  }catch(e){
+    s.textContent=e.name==='NotAllowedError'?'Camera blocked. Click the lock icon in the address bar and allow the camera.':'Error: '+e.message;
+    b.disabled=false;
+  }
+};
+</script></body></html>
